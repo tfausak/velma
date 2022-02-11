@@ -2,8 +2,11 @@ cabal-version: >= 1.10
 
 name: velma
 version: 0.0.0.0
-synopsis: TODO
-description: TODO TODO
+synopsis: Automatically add files to @exposed-modules@ and @other-modules@.
+description:
+    Velma is a Haskell package that makes it easy to automatically add files to
+    @exposed-modules@ and @other-modules@ in Cabal package descriptions, also
+    known as @*.cabal@ files.
 
 build-type: Simple
 category: Distribution
@@ -46,6 +49,9 @@ library
 
     if impl(ghc >= 9.2)
         ghc-options: -Wno-missing-kind-signatures
+
+    if flag(pedantic)
+        ghc-options: -Werror
 
 executable velma
     build-depends: base, velma
