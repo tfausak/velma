@@ -23,8 +23,8 @@ flag pedantic
 
 library
     build-depends:
-        base >= 4.14.0 && < 4.15
-        , Cabal >= 3.2 && < 3.3
+        base >= 4.14.0 && < 4.16
+        , Cabal >= 3.2 && < 3.5
         , containers >= 0.6.4 && < 0.7
         , directory >= 1.3.6 && < 1.4
         , filepath >= 1.4.2 && < 1.5
