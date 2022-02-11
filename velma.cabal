@@ -1,7 +1,7 @@
 cabal-version: >= 1.10
 
 name: velma
-version: 0.0.0.0
+version: 0.2022.2.10
 synopsis: Automatically add files to @exposed-modules@ and @other-modules@.
 description:
     Velma is a Haskell package that makes it easy to automatically add files to
