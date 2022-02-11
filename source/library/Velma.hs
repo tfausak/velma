@@ -128,8 +128,9 @@ discoverBenchmarkModules
 discoverBenchmarkModules directoryContents benchmark =
     let
         oldBuildInfo = Benchmark.benchmarkBuildInfo benchmark
+        excluded = Set.singleton mainModule
         newBuildInfo =
-            discoverOtherModules directoryContents Set.empty oldBuildInfo
+            discoverOtherModules directoryContents excluded oldBuildInfo
     in benchmark { Benchmark.benchmarkBuildInfo = newBuildInfo }
 
 discoverTestSuiteModules
@@ -139,8 +140,9 @@ discoverTestSuiteModules
 discoverTestSuiteModules directoryContents testSuite =
     let
         oldBuildInfo = TestSuite.testBuildInfo testSuite
+        excluded = Set.singleton mainModule
         newBuildInfo =
-            discoverOtherModules directoryContents Set.empty oldBuildInfo
+            discoverOtherModules directoryContents excluded oldBuildInfo
     in testSuite { TestSuite.testBuildInfo = newBuildInfo }
 
 discoverExecutableModules
@@ -150,8 +152,9 @@ discoverExecutableModules
 discoverExecutableModules directoryContents executable =
     let
         oldBuildInfo = Executable.buildInfo executable
+        excluded = Set.singleton mainModule
         newBuildInfo =
-            discoverOtherModules directoryContents Set.empty oldBuildInfo
+            discoverOtherModules directoryContents excluded oldBuildInfo
     in executable { Executable.buildInfo = newBuildInfo }
 
 discoverForeignLibModules
@@ -236,6 +239,9 @@ maybeRemove x ys = case ys of
 
 velmaDiscover :: ModuleName.ModuleName
 velmaDiscover = ModuleName.fromString "Velma.Discover"
+
+mainModule :: ModuleName.ModuleName
+mainModule = ModuleName.fromString "Main"
 
 filePathToModuleName :: FilePath -> Maybe ModuleName.ModuleName
 filePathToModuleName filePath = do
