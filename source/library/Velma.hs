@@ -128,7 +128,8 @@ discoverBenchmarkModules
 discoverBenchmarkModules directoryContents benchmark =
     let
         oldBuildInfo = Benchmark.benchmarkBuildInfo benchmark
-        newBuildInfo = discoverOtherModules directoryContents oldBuildInfo
+        newBuildInfo =
+            discoverOtherModules directoryContents Set.empty oldBuildInfo
     in benchmark { Benchmark.benchmarkBuildInfo = newBuildInfo }
 
 discoverTestSuiteModules
@@ -138,7 +139,8 @@ discoverTestSuiteModules
 discoverTestSuiteModules directoryContents testSuite =
     let
         oldBuildInfo = TestSuite.testBuildInfo testSuite
-        newBuildInfo = discoverOtherModules directoryContents oldBuildInfo
+        newBuildInfo =
+            discoverOtherModules directoryContents Set.empty oldBuildInfo
     in testSuite { TestSuite.testBuildInfo = newBuildInfo }
 
 discoverExecutableModules
@@ -148,7 +150,8 @@ discoverExecutableModules
 discoverExecutableModules directoryContents executable =
     let
         oldBuildInfo = Executable.buildInfo executable
-        newBuildInfo = discoverOtherModules directoryContents oldBuildInfo
+        newBuildInfo =
+            discoverOtherModules directoryContents Set.empty oldBuildInfo
     in executable { Executable.buildInfo = newBuildInfo }
 
 discoverForeignLibModules
@@ -158,7 +161,8 @@ discoverForeignLibModules
 discoverForeignLibModules directoryContents foreignLib =
     let
         oldBuildInfo = ForeignLib.foreignLibBuildInfo foreignLib
-        newBuildInfo = discoverOtherModules directoryContents oldBuildInfo
+        newBuildInfo =
+            discoverOtherModules directoryContents Set.empty oldBuildInfo
     in foreignLib { ForeignLib.foreignLibBuildInfo = newBuildInfo }
 
 discoverLibraryModules
@@ -178,12 +182,12 @@ discoverExposedLibraryModules directoryContents library =
                 entries = concat . Map.elems $ Map.restrictKeys
                     directoryContents
                     directories
-                otherModules =
+                excluded =
                     Set.fromList
                         . BuildInfo.otherModules
                         $ Library.libBuildInfo library
                 discovered =
-                    filter (`Set.notMember` otherModules)
+                    filter (`Set.notMember` excluded)
                         $ Maybe.mapMaybe filePathToModuleName entries
                 allModules = ListUtils.nubOrd $ exposedModules <> discovered
             in library { Library.exposedModules = allModules }
@@ -191,31 +195,19 @@ discoverExposedLibraryModules directoryContents library =
 discoverOtherLibraryModules
     :: Map.Map FilePath [FilePath] -> Library.Library -> Library.Library
 discoverOtherLibraryModules directoryContents library =
-    let oldBuildInfo = Library.libBuildInfo library
-    in
-        case maybeRemove velmaDiscover $ BuildInfo.otherModules oldBuildInfo of
-            Nothing -> library
-            Just otherModules ->
-                let
-                    directories = getHsSourceDirs oldBuildInfo
-                    entries = concat . Map.elems $ Map.restrictKeys
-                        directoryContents
-                        directories
-                    exposedModules =
-                        Set.fromList $ Library.exposedModules library
-                    discovered =
-                        filter (`Set.notMember` exposedModules)
-                            $ Maybe.mapMaybe filePathToModuleName entries
-                    allModules = ListUtils.nubOrd $ otherModules <> discovered
-                    newBuildInfo =
-                        oldBuildInfo { BuildInfo.otherModules = allModules }
-                in library { Library.libBuildInfo = newBuildInfo }
+    let
+        oldBuildInfo = Library.libBuildInfo library
+        excluded = Set.fromList $ Library.exposedModules library
+        newBuildInfo =
+            discoverOtherModules directoryContents excluded oldBuildInfo
+    in library { Library.libBuildInfo = newBuildInfo }
 
 discoverOtherModules
     :: Map.Map FilePath [FilePath]
+    -> Set.Set ModuleName.ModuleName
     -> BuildInfo.BuildInfo
     -> BuildInfo.BuildInfo
-discoverOtherModules directoryContents buildInfo =
+discoverOtherModules directoryContents excluded buildInfo =
     case maybeRemove velmaDiscover $ BuildInfo.otherModules buildInfo of
         Nothing -> buildInfo
         Just otherModules ->
@@ -224,7 +216,9 @@ discoverOtherModules directoryContents buildInfo =
                 entries = concat . Map.elems $ Map.restrictKeys
                     directoryContents
                     directories
-                discovered = Maybe.mapMaybe filePathToModuleName entries
+                discovered =
+                    filter (`Set.notMember` excluded)
+                        $ Maybe.mapMaybe filePathToModuleName entries
                 allModules = ListUtils.nubOrd $ otherModules <> discovered
             in buildInfo { BuildInfo.otherModules = allModules }
 
