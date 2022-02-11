@@ -7,6 +7,19 @@ description:
     Velma is a Haskell package that makes it easy to automatically add files to
     @exposed-modules@ and @other-modules@ in Cabal package descriptions, also
     known as @*.cabal@ files.
+    .
+    == Usage
+    .
+    > -- example.cabal
+    > name: example
+    > version: 0
+    > build-type: Custom
+    > custom-setup
+    >     build-depends: base, Cabal, velma
+    > library
+    >     build-depends: base
+    >     hs-source-dirs: source/library
+    >     exposed-modules: Velma.Discover
 
 build-type: Simple
 category: Distribution
