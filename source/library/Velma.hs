@@ -22,6 +22,7 @@ import qualified Distribution.Types.LocalBuildInfo as LocalBuildInfo
 import qualified Distribution.Types.TestSuite as TestSuite
 import qualified System.Directory as Directory
 import qualified System.FilePath as FilePath
+import qualified Velma.SymbolicPath as SymbolicPath
 
 defaultMain :: IO ()
 defaultMain = Cabal.defaultMainWithHooks userHooks
@@ -228,7 +229,11 @@ discoverOtherModules directoryContents buildInfo =
             in buildInfo { BuildInfo.otherModules = allModules }
 
 getHsSourceDirs :: BuildInfo.BuildInfo -> Set.Set FilePath
-getHsSourceDirs = Set.fromList . withDefault ["."] . BuildInfo.hsSourceDirs
+getHsSourceDirs =
+    Set.fromList
+        . withDefault ["."]
+        . fmap SymbolicPath.toFilePath
+        . BuildInfo.hsSourceDirs
 
 maybeRemove :: Eq a => a -> [a] -> Maybe [a]
 maybeRemove x ys = case ys of

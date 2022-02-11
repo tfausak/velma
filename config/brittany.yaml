@@ -4,3 +4,5 @@ conf_layout:
     tag: ColumnAlignModeDisabled
   lconfig_indentAmount: 4
   lconfig_indentPolicy: IndentPolicyLeft
+conf_preprocessor:
+  ppconf_CPPMode: CPPModeWarn

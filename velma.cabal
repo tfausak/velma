@@ -23,8 +23,8 @@ flag pedantic
 
 library
     build-depends:
-        base >= 4.14.0 && < 4.16
-        , Cabal >= 3.2 && < 3.5
+        base >= 4.14.0 && < 4.17
+        , Cabal >= 3.2 && < 3.7
         , containers >= 0.6.4 && < 0.7
         , directory >= 1.3.6 && < 1.4
         , filepath >= 1.4.2 && < 1.5
@@ -34,6 +34,7 @@ library
         -Weverything
         -Wno-all-missed-specialisations
         -Wno-implicit-prelude
+        -Wno-missed-specialisations
         -Wno-missing-export-lists
         -Wno-missing-exported-signatures
         -Wno-missing-safe-haskell-mode
@@ -41,6 +42,10 @@ library
         -Wno-safe
         -Wno-unsafe
     hs-source-dirs: source/library
+    other-modules: Velma.SymbolicPath
+
+    if impl(ghc >= 9.2)
+        ghc-options: -Wno-missing-kind-signatures
 
 executable velma
     build-depends: base, velma
