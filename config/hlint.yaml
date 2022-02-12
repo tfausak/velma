@@ -1,5 +1,6 @@
 - extensions:
   - default: false
+  - name: RankNTypes
   - name: CPP
     within: Velma.SymbolicPath
 - flags: [ { default: false } ]

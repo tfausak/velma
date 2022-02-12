@@ -1,7 +1,7 @@
 cabal-version: >= 1.10
 
 name: velma
-version: 0.2022.2.11
+version: 0.2022.2.12
 synopsis: Automatically add files to exposed-modules and other-modules.
 description:
     Velma is a Haskell package that makes it easy to automatically add files to
@@ -72,3 +72,17 @@ executable velma
     ghc-options: -rtsopts -threaded
     hs-source-dirs: source/executable
     main-is: Main.hs
+
+test-suite velma-test-suite
+    build-depends:
+        base
+        , Cabal
+        , filepath
+        , hspec
+        , text
+        , velma
+    default-language: Haskell2010
+    ghc-options: -rtsopts -threaded
+    hs-source-dirs: source/test-suite
+    main-is: Main.hs
+    type: exitcode-stdio-1.0
