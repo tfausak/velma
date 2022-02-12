@@ -6,7 +6,3 @@
 :eyeglasses: Automatically add files to `exposed-modules` and `other-modules`.
 
 <https://hackage.haskell.org/package/velma>
-
-- [autopack](https://github.com/kowainik/autopack)
-- [cabal-auto-expose](https://github.com/deech/cabal-auto-expose)
-- [cabal-fmt](https://github.com/phadej/cabal-fmt)
