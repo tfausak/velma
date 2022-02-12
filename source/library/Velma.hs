@@ -81,26 +81,6 @@ discoverWith f = concatM
         (mapM . overF (Lens._2 . condTreeData) $ discoverBenchmark f)
     ]
 
--- | Applies all of the functions left-to-right using '(Monad.>=>)'.
---
--- >>> let printAnd f x = do { putStrLn $ "x = " <> show x; pure $ f x }
--- >>> concatM [ printAnd (+ 2), printAnd (* 2) ] 3
--- x = 3
--- x = 5
--- 10
-concatM :: Monad m => [a -> m a] -> a -> m a
-concatM = foldr (Monad.>=>) pure
-
--- | Like 'Lens.over' except the modification function can perform arbitrary
--- effects.
---
--- >>> overF _2 (Just . (+ 2)) ('a', 3)
--- Just ('a',5)
--- >>> overF _2 (const Nothing) ('a', 3)
--- Nothing
-overF :: Functor f => Lens.Lens' s a -> (a -> f a) -> s -> f s
-overF l f x = (\y -> Lens.set l y x) <$> f (Lens.view l x)
-
 -- | Thin wrapper around 'discoverComponent' for libraries.
 discoverLibrary
     :: Monad m
@@ -172,21 +152,25 @@ discoverComponent
     -> a
     -> m a
 discoverComponent includeL toExclude f component =
-    case maybeRemove velmaDiscoverModuleName $ Lens.view includeL component of
-        Nothing -> pure component
-        Just include ->
-            let
-                addDiscovered discovered = Lens.set
-                    includeL
-                    (ListUtils.nubOrd
-                    . mappend include
-                    . Set.toAscList
-                    . Set.difference discovered
-                    . Set.fromList
-                    $ toExclude component
-                    )
-                    component
-            in addDiscovered <$> getModuleNames f component
+    let
+        velmaDiscover =
+            ModuleName.fromString "Velma.Discover" :: ModuleName.ModuleName
+    in
+        case maybeRemove velmaDiscover $ Lens.view includeL component of
+            Nothing -> pure component
+            Just include ->
+                let
+                    addDiscovered discovered = Lens.set
+                        includeL
+                        (ListUtils.nubOrd
+                        . mappend include
+                        . Set.toAscList
+                        . Set.difference discovered
+                        . Set.fromList
+                        $ toExclude component
+                        )
+                        component
+                in addDiscovered <$> getModuleNames f component
 
 -- | Gets module names for the given component, using the provided function to
 -- list directory contents. This basically just glues together
@@ -201,12 +185,6 @@ getModuleNames f =
         . traverse (\d -> fmap (FilePath.makeRelative d) <$> f d)
         . getHsSourceDirs
 
--- | A lens for the 'CondTree.condTreeData' field.
-condTreeData :: Lens.Lens' (CondTree.CondTree v c a) a
-condTreeData f ct =
-    fmap (\d -> ct { CondTree.condTreeData = d }) . f $ CondTree.condTreeData
-        ct
-
 -- | Gets @hs-source-dirs@ from the given component.
 --
 -- - If @hs-source-dirs@ isn't set (or is empty), this will return the inferred
@@ -220,28 +198,6 @@ getHsSourceDirs =
         . withDefault ["."]
         . fmap SymbolicPath.toFilePath
         . Lens.view Cabal.hsSourceDirs
-
--- | Attempts to remove an element from the list. If it succeeds, returns the
--- list without that element. If it fails, returns 'Nothing'.
---
--- >>> maybeRemove 'b' "abc"
--- Just "ac"
--- >>> maybeRemove 'z' "abc"
--- Nothing
---
--- Note that only the first matching element is removed.
---
--- >>> maybeRemove 'b' "abcb"
--- Just "acb"
-maybeRemove :: Eq a => a -> [a] -> Maybe [a]
-maybeRemove x ys = case ys of
-    [] -> Nothing
-    y : zs -> if x == y then Just zs else (:) y <$> maybeRemove x zs
-
--- | The magic module name that enables automatic module discovery with Velma.
--- This will always be @Velma.Discover@.
-velmaDiscoverModuleName :: ModuleName.ModuleName
-velmaDiscoverModuleName = ModuleName.fromString "Velma.Discover"
 
 -- | Attempts to convert a 'FilePath' into a 'ModuleName.ModuleName'. This
 -- works by stripping certain extensions, then converting directory separators
@@ -260,19 +216,6 @@ filePathToModuleName filePath = do
     base <- FilePath.stripExtension "hs" filePath
     Parsec.simpleParsec . List.intercalate "." $ FilePath.splitDirectories base
 
--- | Returns the given default value if the other value is 'null'. For example:
---
--- >>> withDefault ["default"] []
--- ["default"]
--- >>> withDefault ["default"] ["something"]
--- ["something"]
-withDefault
-    :: Foldable t
-    => t a -- ^ The default value.
-    -> t a
-    -> t a
-withDefault d x = if null x then d else x
-
 -- | Lists all of the directory contents recursively. The returned file paths
 -- will include the directory prefix, unlike 'Directory.listDirectory'. For
 -- example:
@@ -289,3 +232,59 @@ listDirectoryRecursively directory = do
                 else pure [filePath]
     entries <- Directory.listDirectory directory
     mconcat <$> traverse (helper . FilePath.combine directory) entries
+
+-- | Applies all of the functions left-to-right using '(Monad.>=>)'.
+--
+-- >>> let printAnd f x = do { putStrLn $ "x = " <> show x; pure $ f x }
+-- >>> concatM [ printAnd (+ 2), printAnd (* 2) ] 3
+-- x = 3
+-- x = 5
+-- 10
+concatM :: Monad m => [a -> m a] -> a -> m a
+concatM = foldr (Monad.>=>) pure
+
+-- | A lens for the 'CondTree.condTreeData' field.
+condTreeData :: Lens.Lens' (CondTree.CondTree v c a) a
+condTreeData f ct =
+    fmap (\d -> ct { CondTree.condTreeData = d }) . f $ CondTree.condTreeData
+        ct
+
+-- | Attempts to remove an element from the list. If it succeeds, returns the
+-- list without that element. If it fails, returns 'Nothing'.
+--
+-- >>> maybeRemove 'b' "abc"
+-- Just "ac"
+-- >>> maybeRemove 'z' "abc"
+-- Nothing
+--
+-- Note that only the first matching element is removed.
+--
+-- >>> maybeRemove 'b' "abcb"
+-- Just "acb"
+maybeRemove :: Eq a => a -> [a] -> Maybe [a]
+maybeRemove x ys = case ys of
+    [] -> Nothing
+    y : zs -> if x == y then Just zs else (:) y <$> maybeRemove x zs
+
+-- | Like 'Lens.over' except the modification function can perform arbitrary
+-- effects.
+--
+-- >>> overF _2 (Just . (+ 2)) ('a', 3)
+-- Just ('a',5)
+-- >>> overF _2 (const Nothing) ('a', 3)
+-- Nothing
+overF :: Functor f => Lens.Lens' s a -> (a -> f a) -> s -> f s
+overF l f x = (\y -> Lens.set l y x) <$> f (Lens.view l x)
+
+-- | Returns the given default value if the other value is 'null'. For example:
+--
+-- >>> withDefault ["default"] []
+-- ["default"]
+-- >>> withDefault ["default"] ["something"]
+-- ["something"]
+withDefault
+    :: Foldable t
+    => t a -- ^ The default value.
+    -> t a
+    -> t a
+withDefault d x = if null x then d else x
